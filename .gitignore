@@ -1,0 +1,3 @@
+tests/spi/esp32_c3_client/sdkconfig
+tests/spi/esp32_c3_client/build/*
+tests/spi/esp32_c3_client/.vscode

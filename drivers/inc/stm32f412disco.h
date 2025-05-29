@@ -57,6 +57,14 @@
 #define I2C2_BASE (APB1_BASE + 0x5800U)
 #define I2C3_BASE (APB1_BASE + 0x5C00U)
 
+/* SPI BASE ADDRs */
+#define SPI1_BASE (APB2_BASE + 0x13000)
+#define SPI2_BASE (APB1_BASE + 0x3800)
+#define SPI3_BASE (APB1_BASE + 0x3C00)
+#define SPI4_BASE (APB2_BASE + 0x13400)
+#define SPI5_BASE (APB2_BASE + 0x15000)
+
+
 /* External interrupt controller */
 #define EXTI_BASE (APB2_BASE + 0x3C00U)
 /* ?? */

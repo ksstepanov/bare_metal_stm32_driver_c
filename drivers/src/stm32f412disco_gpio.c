@@ -136,7 +136,7 @@ void hal_gpio_init(const GPIO_PinCfg_t *pGPIO_conf, GPIO_Handle_t *pOut)
 		uint8_t reg_offset = pOut->PinCfg.pinNumber % 8;
 
 		pGPIO->AFR[reg_index] &= ~(0xFU << reg_offset * 4);
-	    pGPIO->AFR[reg_index] |= (pOut->PinCfg.pinAFmode<< reg_offset * 4);
+	    pGPIO->AFR[reg_index] |= (pOut->PinCfg.pinAFmode << reg_offset * 4);
 	}
 }
 

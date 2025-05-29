@@ -8,6 +8,7 @@
 #ifndef INC_STM32F412_RCC_H_
 #define INC_STM32F412_RCC_H_
 #include "stm32f412disco.h"
+#include "stm32f412_spi.h"
 #include "assert.h"
 
 /* Reset and clock control */
@@ -102,6 +103,26 @@ enum I2C_APB1ENR_BIT {
 	I2C3_APB1ENR_BIT = 23
 };
 
+enum SPI_ENR_BIT {
+	/* APB1 */
+	SPI2_APB1_PCLK_EN_BIT = 14,
+	SPI3_APB1_PCLK_EN_BIT = 15,
+	/* APB2 */
+	SPI1_APB2_PCLK_EN_BIT = 12,
+	SPI4_APB2_PCLK_EN_BIT = 13,
+	SPI5_APB2_PCLK_EN_BIT = 20,
+};
+
+enum SPI_RST_BIT {
+	/* APB1 */
+	SPI2_APB1_RST_BIT = 14,
+	SPI3_APB1_RST_BIT = 15,
+	/* APB2 */
+	SPI1_APB2_RST_BIT = 12,
+	SPI4_APB2_RST_BIT = 13,
+	SPI5_APB2_RST_BIT = 20,
+};
+
 static inline void hal_i2c_rcc_pclk_en(I2C_num_t i2c)
 {
 	RCC_RegDef_t *const pRCC = RCC;
@@ -136,6 +157,40 @@ static inline void hal_rcc_gpio_pclk_di(gpio_port_num_t gpio)
 	pRCC->AHB1ENR &= ~(1 << gpio);
 }
 
+static inline void hal_rcc_spi_pclk_en(spi_dev_num_t spi_dev)
+{
+	RCC_RegDef_t *const pRCC = RCC;
+	/* APB1 */
+	if (spi_dev == SPI2)
+		pRCC->APB1ENR |= (1 << SPI2_APB1_PCLK_EN_BIT);
+	else if (spi_dev == SPI3)
+		pRCC->APB1ENR |= (1 << SPI3_APB1_PCLK_EN_BIT);
+	/* APB2 */
+	else if (spi_dev == SPI1)
+		pRCC->APB2ENR |= (1 << SPI1_APB2_PCLK_EN_BIT);
+	else if (spi_dev == SPI4)
+		pRCC->APB2ENR |= (1 << SPI1_APB2_PCLK_EN_BIT);
+	else if (spi_dev == SPI5)
+		pRCC->APB2ENR |= (1 << SPI1_APB2_PCLK_EN_BIT);
+}
+
+static inline void hal_rcc_spi_pclk_di(spi_dev_num_t spi_dev)
+{
+	RCC_RegDef_t *const pRCC = RCC;
+	/* APB1 */
+	if (spi_dev == SPI2)
+		pRCC->APB1ENR &= ~(1 << SPI2_APB1_PCLK_EN_BIT);
+	else if (spi_dev == SPI3)
+		pRCC->APB1ENR &= ~(1 << SPI3_APB1_PCLK_EN_BIT);
+	/* APB2 */
+	else if (spi_dev == SPI1)
+		pRCC->APB2ENR &= ~(1 << SPI1_APB2_PCLK_EN_BIT);
+	else if (spi_dev == SPI4)
+		pRCC->APB2ENR &= ~(1 << SPI1_APB2_PCLK_EN_BIT);
+	else if (spi_dev == SPI5)
+		pRCC->APB2ENR &= ~(1 << SPI1_APB2_PCLK_EN_BIT);
+}
+
 static inline void hal_rcc_gpio_peri_reset(gpio_port_num_t gpio)
 {
 	RCC_RegDef_t *const pRCC = RCC;
@@ -143,6 +198,29 @@ static inline void hal_rcc_gpio_peri_reset(gpio_port_num_t gpio)
 	pRCC->AHB1RSTR |= (1 << gpio);
 	// Should wait here?
 	pRCC->AHB1RSTR &= ~(1 << gpio);
+}
+
+static inline void hal_rcc_spi_peri_reset(spi_dev_num_t spi_dev)
+{
+	RCC_RegDef_t *const pRCC = RCC;
+	/* APB1 */
+	if (spi_dev == SPI2) {
+		pRCC->APB1ENR |= (1 << SPI2_APB1_RST_BIT);
+		pRCC->APB1ENR &= ~(1 << SPI2_APB1_RST_BIT);
+	} else if (spi_dev == SPI3) {
+		pRCC->APB1ENR |= (1 << SPI3_APB1_RST_BIT);
+		pRCC->APB1ENR &= ~(1 << SPI3_APB1_RST_BIT);
+	/* APB2 */
+	} else if (spi_dev == SPI1) {
+		pRCC->APB2ENR |= (1 << SPI1_APB2_RST_BIT);
+		pRCC->APB2ENR &= ~(1 << SPI1_APB2_RST_BIT);
+	} else if (spi_dev == SPI4) {
+		pRCC->APB2ENR |= (1 << SPI4_APB2_RST_BIT);
+		pRCC->APB2ENR &= ~(1 << SPI4_APB2_RST_BIT);
+	} else if (spi_dev == SPI5) {
+		pRCC->APB2ENR |= (1 << SPI5_APB2_RST_BIT);
+		pRCC->APB2ENR &= ~(1 << SPI5_APB2_RST_BIT);
+	}
 }
 
 static inline void hal_rcc_syscfg_pclk_conf(hal_enable_disable_t en_dis)

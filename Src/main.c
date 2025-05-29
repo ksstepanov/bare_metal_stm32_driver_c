@@ -24,18 +24,21 @@
 #include "001_led_toggle.h"
 #include "002_led_joystik.h"
 #include "003_led_interrupt.h"
+#include "004_spi_tx_test.h"
 
 void EXTI9_5_IRQHandler(void)
 {
 	printf("%s\n", __func__);
-	led_interrupt_003_button_handler();
+	//led_interrupt_003_button_handler();
+	gpio_interrupt_004_handler();
 }
 
 int main(void)
 {
 	//led_toggle_001_main();
 	//led_joystick_002_main();
-	led_interrupt_003_main();
+	//led_interrupt_003_main();
+	spi_tx_test_004_main();
     /* Loop forever */
 	for(;;);
 }
