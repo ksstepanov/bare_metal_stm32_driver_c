@@ -10,7 +10,7 @@
 #include "stm32f412_rcc.h"
 #include "stm32f412_exti.h"
 #include "stm32f412_syscfg.h"
-#include "arm_cortex_m4_nvic.h"
+#include "stm32f412_nvic_config.h"
 #include "assert.h"
 #include <stdlib.h>
 
@@ -207,8 +207,8 @@ void hal_gpio_toggle_output_pin(const GPIO_Handle_t *pGPIO)
 
 void hal_gpio_IRQ_config(const GPIO_Handle_t *pGPIO, uint8_t irq_priority, uint8_t en_di)
 {
-	nvic_interrupt_number_t irq_num = hal_nvic_exti_line_to_irq(pGPIO->PinCfg.pinNumber);
-	hal_nvic_irq_exti_enable_disable(irq_num, en_di);
+	nvic_interrupt_number_t irq_num = hal_exti_line_to_nvic_irq(pGPIO->PinCfg.pinNumber);
+	hal_nvic_irq_enable_disable(irq_num, en_di);
 	hal_nvic_irq_priority_config(irq_num, irq_priority);
 }
 

@@ -43,6 +43,14 @@ sending a transaction. As soon as the transaction is done, the line gets set low
 
 static const char *TAG = "ESP-C3";
 
+
+typedef enum {
+    SPI_DUMMY_BYTE = 0xDD,
+    SPI_CMD_ACK = 0xAA,
+    SPI_LEN_ACK = 0xAB,
+    SPI_MSG_ACK = 0xAC
+} spi_test_005_command_t;
+
 //Called after a transaction is queued and ready for pickup by master. We use this to set the handshake line high.
 void my_post_setup_cb(spi_slave_transaction_t *trans)
 {
@@ -110,6 +118,7 @@ void app_main(void)
         memset(recvbuf, 0xA5, 129);
         sprintf(sendbuf, "This is the receiver, sending data for transmission number %04d.", n);
         ESP_LOGI(TAG, "Slave receiving 1 byte");
+        sendbuf[0] = SPI_DUMMY_BYTE;
         t.length = 1 * 8;//128 * 8;
         t.tx_buffer = sendbuf;
         t.rx_buffer = recvbuf;
@@ -118,7 +127,7 @@ void app_main(void)
         if (recvbuf[0] != 0xFF)
             continue;
         ESP_LOGI(TAG, "Slave transmitting 1 byte");
-        sendbuf[0] = 0xAA;
+        sendbuf[0] = SPI_CMD_ACK;
         t.length = 1 * 8;//128 * 8;
         t.tx_buffer = sendbuf;
         t.rx_buffer = recvbuf;
@@ -126,6 +135,7 @@ void app_main(void)
         ESP_LOGI(TAG, "Slave transmit done %x, transaction len = %lu", sendbuf[0], t.trans_len);
 
         ESP_LOGI(TAG, "Slave receiving 1 byte length");
+        sendbuf[0] = SPI_DUMMY_BYTE;
         t.length = 1 * 8;//128 * 8;
         t.tx_buffer = sendbuf;
         t.rx_buffer = recvbuf;
@@ -134,7 +144,7 @@ void app_main(void)
         msg_len = recvbuf[0];
 
         ESP_LOGI(TAG, "Slave transmitting 1 byte (len ack)");
-        sendbuf[0] = 0xAB;
+        sendbuf[0] = SPI_LEN_ACK;
         t.length = 1 * 8;//128 * 8;
         t.tx_buffer = sendbuf;
         t.rx_buffer = recvbuf;
@@ -143,6 +153,7 @@ void app_main(void)
 
         ESP_LOGI(TAG, "Slave receiving msg");
         t.length = msg_len * 8;//128 * 8;
+        sendbuf[0] = SPI_DUMMY_BYTE;
         t.tx_buffer = sendbuf;
         t.rx_buffer = recvbuf;
         ret = spi_slave_transmit(RCV_HOST, &t, portMAX_DELAY); /* 1000*/
@@ -151,7 +162,7 @@ void app_main(void)
         ESP_LOGI(TAG, "Slave receive done %s, transaction len = %lu", msg_to_print, t.trans_len);
 
         ESP_LOGI(TAG, "Slave transmitting 1 byte (msg ack)");
-        sendbuf[0] = 0xAC;
+        sendbuf[0] = SPI_MSG_ACK;
         t.length = 1 * 8;//128 * 8;
         t.tx_buffer = sendbuf;
         t.rx_buffer = recvbuf;

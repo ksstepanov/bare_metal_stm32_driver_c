@@ -39,7 +39,7 @@ static const GPIO_PinCfg_t button_gpio_conf = {
  * Interrupt is waiting gpio pc6 line to up, this is the signal from the receiver that it is ready.
  * When transaction is over receiver will put the line to low to process the message and execute the command if needed.
  */
-void gpio_init_slave_ready_interrupt(void)
+static void gpio_init_slave_ready_interrupt(void)
 {
 
 	hal_gpio_init(&button_gpio_conf, &button_gpio);
@@ -54,7 +54,7 @@ void gpio_interrupt_004_handler(void)
 	hal_gpio_IRQ_handle(button_gpio.PinCfg.pinNumber);
 }
 
-void gpio_pins_enable() {
+static void gpio_pins_enable() {
 	GPIO_PinCfg_t gpio_spi2_conf = {
 		.portNumber = GPIOB_PORT,
 		.pinMode = GPIO_ALT_FUNC,

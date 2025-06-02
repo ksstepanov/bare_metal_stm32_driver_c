@@ -25,12 +25,27 @@
 #include "002_led_joystik.h"
 #include "003_led_interrupt.h"
 #include "004_spi_tx_test.h"
+#include "005_spi_tx_test.h"
+
+//#define TEST_4
+#define TEST_5
 
 void EXTI9_5_IRQHandler(void)
 {
 	printf("%s\n", __func__);
 	//led_interrupt_003_button_handler();
+#ifdef TEST_4
 	gpio_interrupt_004_handler();
+#endif
+#ifdef TEST_5
+	gpio_interrupt_005_handler();
+#endif
+}
+
+void SPI2_IRQHandler(void)
+{
+	printf("%s\n", __func__);
+	spi_interrupt_005_handler();
 }
 
 int main(void)
@@ -38,7 +53,12 @@ int main(void)
 	//led_toggle_001_main();
 	//led_joystick_002_main();
 	//led_interrupt_003_main();
+#ifdef TEST_4
 	spi_tx_test_004_main();
+#endif
+#ifdef TEST_5
+	spi_tx_test_005_main();
+#endif
     /* Loop forever */
 	for(;;);
 }

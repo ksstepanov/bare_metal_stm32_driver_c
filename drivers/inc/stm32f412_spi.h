@@ -9,6 +9,7 @@
 #define INC_STM32F412_SPI_H_
 #include "stm32f412disco.h"
 
+
 typedef enum {
 	SPI1 = 1,
 	SPI2,
@@ -31,6 +32,7 @@ typedef enum {
 	_SPI_BUS_CONF_NUM
 } spi_bus_conf_t;
 
+/* clock divider: defines final spi speed as BUS_CLOCK/divider */
 typedef enum {
 	SPI_CLK_DIV_2 = 0,
 	SPI_CLK_DIV_4 = 1,
@@ -43,26 +45,34 @@ typedef enum {
 	_SPI_CLK_DIV_NUM
 } spi_clock_speed_divisor_t;
 
+/* Data frame format */
 typedef enum {
 	SPI_DFF_8_BIT = 0,
 	SPI_DFF_16_BIT,
 	_SPI_DFF_NUM
 } spi_dff_t;
 
+/* Clock polarity: controls idle state: 0 - low, 1 - high. */
 typedef enum {
 	SPI_CPOL_LOW = 0,
 	SPI_CPOL_HIGH,
 	_SPI_CPOL_NUM
 } spi_cpol_t;
 
+/* Clock phase: controls on which clock edge (1-st or 2nd) the data should be sampled.
+ * Default mode CPOL 0, CPHA = 0 means data captured on the first edge which is rising.
+ * This means first data sample appears half period before first clock, so that first riding edge of clock
+ * correspond to middle of the data signal.
+ */
 typedef enum {
 	SPI_CPHA_FIRST_EDGE = 0,
 	SPI_CPHA_SECOND_EDGE,
 	_SPI_CPHA_NUM
 } spi_cpha_t;
 
+/* software slave management (SSM): */
 typedef enum {
-	SPI_SSM_HW = 0,
+	SPI_SSM_HW = 0, /* use HW - SSM disabled */
 	SPI_SSM_SW,
 	_SPI_SSM_NUM
 } spi_ssm_t;
@@ -156,15 +166,20 @@ typedef struct {
 
 /* SPI SR (SPI Status register) bit shifts */
 typedef enum {
-	SPI_SR_RXNE = 0,
-	SPI_SR_TXE = 1,
-	SPI_SR_CHSIDE = 2,
-	SPI_SR_UDR = 3,
-	SPI_SR_CRC_ERR = 4,
-	SPI_SR_MODF = 5,
-	SPI_SR_OVR = 6,
-	SPI_SR_BSY = 7,
-	SPI_SR_FRE = 8
+	SPI_SR_RXNE = 0,     /* Receive buffer not empty */
+	SPI_SR_TXE = 1,      /* Transmit buffer empty */
+	SPI_SR_CHSIDE = 2,   /* Channel side: not used in SPI */
+	SPI_SR_UDR = 3,      /* Underrun flag: not used in SPI */
+	SPI_SR_CRC_ERR = 4,  /* CRC error flag */
+	SPI_SR_MODF = 5,     /* Mode fault: happens in multi-master mode and signals that one more master is active on the line */
+	SPI_SR_OVR = 6,      /* An overrun condition occurs when the master or the slave completes the reception of the
+                          * next data frame while the read operation of the previous frame from the Rx buffer has not
+                          * completed (case RXNE flag is set). */
+	SPI_SR_BSY = 7,      /* indicates that a data transfer is in progress on the SPI */
+	SPI_SR_FRE = 8       /* Frame Error: used in SPI TI mode or in I2S mode, detects a change on NSS or WS line which takes place
+                          *          in slave mode at a non expected time, informing about a desynchronization between the
+                          *          external master device and the slave.
+                          */
 } spi_sr_shifts_t;
 
 typedef struct {
@@ -178,11 +193,41 @@ typedef struct {
 	uint8_t SSM;           /* Software slave management from ? */
 } SPI_Cfg_t; /* FIXME packed ? */
 
+
+/* FIXME: questionable if this is needed ? */
+typedef enum {
+	SPI_READY = 0,
+	SPI_BUSY_TX = 1,
+	SPI_BUSY_RX = 2
+} spi_state_t;
+
+typedef enum {
+	SPI_EVENT_TX_DONE = 0,
+	SPI_EVENT_RX_DONE = 1,
+	SPI_EVENT_ERR_CRC = 2,
+	SPI_EVENT_ERR_MODF = 3,
+	SPI_EVENT_ERR_OVERRUN = 4
+} spi_application_event_t;
+
+
+
+typedef struct {
+	const uint8_t *pTX_data;
+	uint8_t *pRX_data;
+	uint16_t tx_len;
+	uint16_t rx_len;
+	uint8_t tx_state;
+	uint8_t rx_state;
+} SPI_transaction_t;
+
 typedef struct {
 	/* Base addr of SPI peripheral */
 	SPI_I2S_RegDef_t *pSPI_Base;
 	/* SPI configuration settings */
 	SPI_Cfg_t SPICfg;
+
+	/* current transaction data */
+	SPI_transaction_t *data;
 } SPI_Handle_t;
 
 /**
@@ -201,11 +246,14 @@ void hal_spi_deinit(spi_dev_num_t gpio);
 void hal_spi_send_data(const SPI_Handle_t *pSPI_dev, const uint8_t *pTX_data, uint32_t tx_len);
 void hal_spi_receive_data(const SPI_Handle_t *pSPI_dev, uint8_t *pRX_data, uint32_t rx_len);
 
+spi_state_t hal_spi_send_data_with_IT(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *t); // FIXME const
+spi_state_t hal_spi_receive_data_with_IT(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *t);
+
 /* Interrupts */
-void hal_spi_IRQ_config(const SPI_Handle_t *pSPI, uint8_t irq_priority, uint8_t en_di);
+void hal_spi_IRQ_config(SPI_Handle_t *pSPI, uint8_t irq_priority, uint8_t en_di);
 
 
-void hal_spi_IRQ_handle(const SPI_Handle_t *pSPI);
+void hal_spi_IRQ_handle(SPI_Handle_t *pSPI);
 
 void hal_spi_enable(const SPI_Handle_t *pSPI_dev, hal_enable_disable_t en_dis);
 
@@ -218,5 +266,28 @@ static inline spi_busy_t hal_spi_is_busy(const SPI_I2S_RegDef_t *pSPI)
 {
 	return (spi_busy_t) (pSPI->SR & (1 << SPI_SR_BSY));
 }
+
+static inline const char *hal_spi_dbg_status_to_string(spi_application_event_t status)
+{
+	if (status == SPI_EVENT_TX_DONE)
+		return "TXDONE";
+	else if (status == SPI_EVENT_RX_DONE)
+		return "RXDONE";
+	else if (status == SPI_EVENT_ERR_OVERRUN)
+		return "ERR:OVERRUN";
+	else if (status == SPI_EVENT_ERR_CRC)
+		return "ERR:CRC";
+	else if (status == SPI_EVENT_ERR_MODF)
+		return "ERR:MODF";
+	else
+		return "ERROR STATUS UNKNOWN!";
+}
+
+void hal_spi_clear_overrun_flag(SPI_Handle_t *pSPI); // FIXME? SHould be exported?
+void hal_spi_close_transmission(SPI_Handle_t *pSPI);
+void hal_spi_close_reception(SPI_Handle_t *pSPI);
+
+/* Optional callback */
+void spi_application_return_callback(SPI_Handle_t *pSPI, spi_application_event_t status);
 
 #endif /* INC_STM32F412_SPI_H_ */
