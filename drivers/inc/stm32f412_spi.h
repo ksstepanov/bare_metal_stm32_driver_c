@@ -243,8 +243,8 @@ void hal_spi_init(const SPI_Cfg_t *pGPIO_conf, SPI_Handle_t *pOut);
  * */
 void hal_spi_deinit(spi_dev_num_t gpio);
 
-void hal_spi_send_data(const SPI_Handle_t *pSPI_dev, const uint8_t *pTX_data, uint32_t tx_len);
-void hal_spi_receive_data(const SPI_Handle_t *pSPI_dev, uint8_t *pRX_data, uint32_t rx_len);
+void hal_spi_send_data_with_polling(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *pTransaction);
+void hal_spi_receive_data_with_polling(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *pTransaction);
 
 spi_state_t hal_spi_send_data_with_IT(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *t); // FIXME const
 spi_state_t hal_spi_receive_data_with_IT(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *t);

@@ -13,6 +13,7 @@
 #include "stm32f412_rcc.h"
 #include "stm32f412_nvic_config.h"
 
+/* Holds current transaction that is currently transmitted or received */
 static SPI_transaction_t current_transaction;
 
 /* SPI CR1 (Control register 1) bit shifts */
@@ -72,8 +73,8 @@ static inline bool is_rx_ready(const SPI_I2S_RegDef_t *pSPI);
 static inline bool is_spi_error(const SPI_I2S_RegDef_t *pSPI, spi_tx_rx_status_t err_code);
 
 /* ============== SPI single byte TX/RX routines: ================= */
-static inline void spi_tx(SPI_Handle_t *pSPI, SPI_transaction_t *pTransaction);
-static inline void spi_rx(SPI_Handle_t *pSPI, SPI_transaction_t *pTransaction);
+static inline void spi_tx(const SPI_Handle_t *pSPI, SPI_transaction_t *pTransaction);
+static inline void spi_rx(const SPI_Handle_t *pSPI, SPI_transaction_t *pTransaction);
 
 /* ============== Interrupt handling cases: ============== */
 static inline void spi_int_txe_handle(SPI_Handle_t *pSPI);
@@ -161,49 +162,28 @@ void hal_spi_deinit(spi_dev_num_t spi_dev)
 }
 
 // TODO return an error code
-void hal_spi_send_data(const SPI_Handle_t *pSPI_dev, const uint8_t *pTX_data, uint32_t tx_len)
+void hal_spi_send_data_with_polling(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *pTransaction)
 {
 	assert(is_spi_enabled(pSPI_dev->pSPI_Base));
 
-	if (pTX_data != NULL && tx_len > 0) {
-		while (tx_len > 0) {
+	if (pTransaction->pTX_data != NULL && pTransaction->tx_len > 0) {
+		while (pTransaction->tx_len > 0) {
 
 			wait_tx_empty(pSPI_dev->pSPI_Base);
-
-			uint16_t val = 0;
-			if (pSPI_dev->SPICfg.DFF == SPI_DFF_8_BIT || tx_len == 1) {
-				val = *pTX_data;
-			} else {
-				val = * ((uint16_t *)pTX_data);
-				tx_len --;
-				pTX_data ++;
-			}
-			tx_len --;
-			pTX_data ++;
-			pSPI_dev->pSPI_Base->DR = val;
+			spi_tx(pSPI_dev, pTransaction);
 		}
 	}
 }
 
-
-void hal_spi_receive_data(const SPI_Handle_t *pSPI_dev, uint8_t *pRX_data, uint32_t rx_len)
+void hal_spi_receive_data_with_polling(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *pTransaction)
 {
 	assert(is_spi_enabled(pSPI_dev->pSPI_Base));
 
-	if (pRX_data != NULL && rx_len > 0) {
-		while (rx_len > 0) {
+	if (pTransaction->pRX_data != NULL && pTransaction->rx_len > 0) {
+		while (pTransaction->rx_len > 0) {
 
 			wait_rx_ready(pSPI_dev->pSPI_Base);
-
-			if (pSPI_dev->SPICfg.DFF == SPI_DFF_8_BIT || rx_len == 1) {
-				*pRX_data = (uint8_t)(pSPI_dev->pSPI_Base->DR & 0xFF);
-			} else {
-				*((uint16_t *)pRX_data) = ((uint16_t)(pSPI_dev->pSPI_Base->DR & 0xFFFF));
-				rx_len --;
-				pRX_data ++;
-			}
-			rx_len --;
-			pRX_data ++;
+			spi_rx(pSPI_dev, pTransaction);
 		}
 	}
 }
@@ -226,7 +206,6 @@ void hal_spi_IRQ_config(SPI_Handle_t *pSPI_dev, uint8_t irq_priority, uint8_t en
 	hal_nvic_irq_enable_disable(irq_num, en_di);
 	hal_nvic_irq_priority_config(irq_num, irq_priority);
 }
-
 
 
 /**
@@ -255,7 +234,6 @@ void hal_spi_IRQ_handle(SPI_Handle_t *pSPI)
 	}
 }
 
-// FIXME: SPI handle should be const */
 // FIXME: make tread safe
 spi_state_t hal_spi_send_data_with_IT(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *t)
 {
@@ -415,7 +393,7 @@ static inline bool is_spi_error(const SPI_I2S_RegDef_t *pSPI, spi_tx_rx_status_t
 /**
  * @brief SPI transmission of a single frame (8/16 bits)
  */
-static inline void spi_tx(SPI_Handle_t *pSPI, SPI_transaction_t *pTransaction)
+static inline void spi_tx(const SPI_Handle_t *pSPI, SPI_transaction_t *pTransaction)
 {
 	uint16_t val = 0;
 	if (pSPI->SPICfg.DFF == SPI_DFF_8_BIT || pTransaction->tx_len == 1) {
@@ -433,7 +411,7 @@ static inline void spi_tx(SPI_Handle_t *pSPI, SPI_transaction_t *pTransaction)
 /**
  * @brief SPI reception of a single frame (8/16 bits)
  */
-static inline void spi_rx(SPI_Handle_t *pSPI, SPI_transaction_t *pTransaction)
+static inline void spi_rx(const SPI_Handle_t *pSPI, SPI_transaction_t *pTransaction)
 {
 	if (pSPI->SPICfg.DFF == SPI_DFF_8_BIT || pTransaction->rx_len == 1) {
 		*(pTransaction->pRX_data) = (uint8_t)(pSPI->pSPI_Base->DR & 0xFF);

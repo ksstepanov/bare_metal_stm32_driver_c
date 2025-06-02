@@ -27,8 +27,8 @@
 #include "004_spi_tx_test.h"
 #include "005_spi_tx_test.h"
 
-//#define TEST_4
-#define TEST_5
+#define TEST_4
+//#define TEST_5
 
 void EXTI9_5_IRQHandler(void)
 {
