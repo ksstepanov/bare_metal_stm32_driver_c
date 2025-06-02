@@ -9,10 +9,10 @@
 #include <stdio.h>
 
 typedef enum led_pins_ {
-	LED_GREEN_PIN = GPIO_PIN0,
-	LED_ORANGE_PIN = GPIO_PIN1,
-	LED_RED_PIN = GPIO_PIN2,
-	LED_BLUE_PIN = GPIO_PIN3
+	LED_GREEN_PIN = GPIO_PC0,
+	LED_ORANGE_PIN = GPIO_PC1,
+	LED_RED_PIN = GPIO_PC2,
+	LED_BLUE_PIN = GPIO_PC3
 } led_pins_t;
 
 static void delay(uint32_t ticks)
@@ -24,9 +24,8 @@ static void led_toggle_001_push_pull(void)
 {
 	printf("%s started\n", __func__);
 	const GPIO_PinCfg_t led_1_gpio_conf = {
-		.portNumber = GPIOC_PORT,
 		.pinMode = GPIO_OUTPUT,
-		.pinNumber = 7,
+		.pinNumber = GPIO_PC7,
 		.pinOpType = GPIO_OUT_PUSH_PULL,
 		.pinPuPdControl = GPIO_PIN_NO_PU_PD,
 		.pinSpeed = GPIO_OUT_SP_HIGH,
@@ -46,9 +45,8 @@ static void led_toggle_001_open_drain(void)
 {
 	printf("%s started\n", __func__);
 	const GPIO_PinCfg_t led_1_gpio_conf = {
-		.portNumber = GPIOC_PORT,
 		.pinMode = GPIO_OUTPUT,
-		.pinNumber = 7,
+		.pinNumber = GPIO_PC7,
 		.pinOpType = GPIO_OUT_OPEN_DRAIN,
 		.pinPuPdControl = GPIO_PIN_PU,
 		.pinSpeed = GPIO_OUT_SP_HIGH,

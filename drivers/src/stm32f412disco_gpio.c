@@ -17,7 +17,7 @@
 /**
  * @brief Maps enum gpio_port_t to actual GPIO addresses
  */
-static GPIO_RegDef_t *const gpio_port_to_address[NUM_OF_GPIOS] = {
+static GPIO_RegDef_t *const gpio_port_to_address[GPIO_PORTS_NUM] = {
 		GPIOA, /* GPIOA_PORT */
 		GPIOB, /* GPIOB_PORT */
 		GPIOC, /* GPIOC_PORT */
@@ -29,7 +29,7 @@ static GPIO_RegDef_t *const gpio_port_to_address[NUM_OF_GPIOS] = {
 };
 
 #define IS_VALID_PORT(X) ((X >= 0) && (X < NUM_OF_GPIOS))
-#define IS_VALID_PIN(X) ((X >= 0) && (X <= GPIO_PIN15))
+#define IS_VALID_PIN(X) ((X >= 0) && (X < GPIO_PINS_NUM))
 #define IS_VALID_MODE(X) ((X >= 0) && (X <= GPIO_ANALOG))
 #define IS_VALID_SPEED(X) ((X >= 0) && (X <= GPIO_OUT_SP_VHIGH))
 #define IS_VALID_PU_PD(X) ((X >= 0) && (X <= GPIO_PIN_PD))
@@ -46,7 +46,7 @@ static GPIO_RegDef_t *const gpio_port_to_address[NUM_OF_GPIOS] = {
 static inline void validate_pin_cfg(const GPIO_PinCfg_t *pGPIO_conf)
 {
 	assert(pGPIO_conf != NULL);
-    assert(IS_VALID_PORT(pGPIO_conf->portNumber));
+    //assert(IS_VALID_PORT(pGPIO_conf->portNumber));
     assert(IS_VALID_PIN(pGPIO_conf->pinNumber));
     assert(IS_VALID_MODE(pGPIO_conf->pinMode));
     assert(IS_VALID_SPEED(pGPIO_conf->pinSpeed));
@@ -72,24 +72,27 @@ static inline void hal_gpio_perip_clk_ctrl(gpio_port_num_t port_number, hal_enab
 
 static inline void hal_gpio_enable_interrupt(const GPIO_Handle_t *pGPIO)
 {
+	gpio_pin_index_t pin_idx = hal_gpio_pin_to_pin_index_within_port(pGPIO->PinCfg.pinNumber);
+	gpio_port_num_t port = hal_gpio_pin_to_port(pGPIO->PinCfg.pinNumber);
+
 	/* 1. Configure rising and falling edge trigger: */
     if (pGPIO->PinCfg.pinInIntTrig == GPIO_IN_INT_TRIG_FALLING) {
-    	hal_exti_gpio_falling_trigger_conf(pGPIO->PinCfg.pinNumber, HAL_ENABLE);
-    	hal_exti_gpio_rising_trigger_conf(pGPIO->PinCfg.pinNumber, HAL_DISABLE);
+    	hal_exti_gpio_falling_trigger_conf(pin_idx, HAL_ENABLE);
+    	hal_exti_gpio_rising_trigger_conf(pin_idx, HAL_DISABLE);
     } else if (pGPIO->PinCfg.pinInIntTrig == GPIO_IN_INT_TRIG_RISING) {
-    	hal_exti_gpio_rising_trigger_conf(pGPIO->PinCfg.pinNumber, HAL_ENABLE);
-    	hal_exti_gpio_falling_trigger_conf(pGPIO->PinCfg.pinNumber, HAL_DISABLE);
+    	hal_exti_gpio_rising_trigger_conf(pin_idx, HAL_ENABLE);
+    	hal_exti_gpio_falling_trigger_conf(pin_idx, HAL_DISABLE);
     } else if (pGPIO->PinCfg.pinInIntTrig == GPIO_IN_INT_TRIG_RISING_FALLING) {
-    	hal_exti_gpio_falling_trigger_conf(pGPIO->PinCfg.pinNumber, HAL_ENABLE);
-    	hal_exti_gpio_rising_trigger_conf(pGPIO->PinCfg.pinNumber, HAL_ENABLE);
+    	hal_exti_gpio_falling_trigger_conf(pin_idx, HAL_ENABLE);
+    	hal_exti_gpio_rising_trigger_conf(pin_idx, HAL_ENABLE);
     }
 
     // 2. Configure GPIO port selection using SYSCFG EXTICR */
     hal_rcc_syscfg_pclk_conf(HAL_ENABLE);
-    hal_syscfg_exti_gpio_int_conf(pGPIO->PinCfg.portNumber, pGPIO->PinCfg.pinNumber, HAL_ENABLE);
+    hal_syscfg_exti_gpio_int_conf(port, pin_idx, HAL_ENABLE);
 
     // 3. Enable EXTI interrupt delivery with IMR:
-    hal_exti_int_line_conf(pGPIO->PinCfg.pinNumber, HAL_ENABLE);
+    hal_exti_int_line_conf(pin_idx, HAL_ENABLE);
 }
 
 /**
@@ -101,39 +104,42 @@ void hal_gpio_init(const GPIO_PinCfg_t *pGPIO_conf, GPIO_Handle_t *pOut)
 {
 	validate_pin_cfg(pGPIO_conf);
 
-	pOut->pGPIO_Base = gpio_port_to_address[pGPIO_conf->portNumber];
+	gpio_pin_index_t pin_idx = hal_gpio_pin_to_pin_index_within_port(pGPIO_conf->pinNumber);
+	gpio_port_num_t port = hal_gpio_pin_to_port(pGPIO_conf->pinNumber);
+
+	pOut->pGPIO_Base = gpio_port_to_address[port];
 	pOut->PinCfg = *pGPIO_conf;
 
 	GPIO_RegDef_t *const pGPIO = pOut->pGPIO_Base;
 
 	// 0. Enable GPIO clock:
-	hal_gpio_perip_clk_ctrl(pGPIO_conf->portNumber, HAL_ENABLE);
+	hal_gpio_perip_clk_ctrl(port, HAL_ENABLE);
 
 	// 1. configure the mode of GPIO pin: push-pull / open drain : 2 bits
-	pGPIO->MODER &= ~(0x3U << pOut->PinCfg.pinNumber * 2);
-	pGPIO->MODER |= (pOut->PinCfg.pinMode << pOut->PinCfg.pinNumber * 2);
+	pGPIO->MODER &= ~(0x3U << pin_idx * 2);
+	pGPIO->MODER |= (pOut->PinCfg.pinMode << pin_idx * 2);
 
 	// 1.1 COnfigure pin interrupt mode:
 	if (pOut->PinCfg.pinInIntTrig != GPIO_IN_INT_TRIG_DISABLED)
 		hal_gpio_enable_interrupt(pOut);
 
 	// 2. configure the speed : 2 bits
-	pGPIO->OSPEEDR &= ~(0x3U << pOut->PinCfg.pinNumber * 2);
-	pGPIO->OSPEEDR |= (pOut->PinCfg.pinSpeed << pOut->PinCfg.pinNumber * 2);
+	pGPIO->OSPEEDR &= ~(0x3U << pin_idx * 2);
+	pGPIO->OSPEEDR |= (pOut->PinCfg.pinSpeed << pin_idx * 2);
 
 	// 3. configure pull-up/down resistors : 2 bits
-	pGPIO->PUPDR &= ~(0x3U << pOut->PinCfg.pinNumber * 2);
-	pGPIO->PUPDR |= (pOut->PinCfg.pinPuPdControl << pOut->PinCfg.pinNumber * 2);
+	pGPIO->PUPDR &= ~(0x3U << pin_idx * 2);
+	pGPIO->PUPDR |= (pOut->PinCfg.pinPuPdControl << pin_idx * 2);
 
 	// 4. configure output type: 1 bit
 	if (pOut->PinCfg.pinMode == GPIO_OUTPUT) {
-		pGPIO->OTYPER &= ~(0x1U << pOut->PinCfg.pinNumber * 1);
-	    pGPIO->OTYPER |= (pOut->PinCfg.pinOpType << pOut->PinCfg.pinNumber * 1);
+		pGPIO->OTYPER &= ~(0x1U << pin_idx * 1);
+	    pGPIO->OTYPER |= (pOut->PinCfg.pinOpType << pin_idx * 1);
 	}
 	// 5. configure alternative function: 4 bits
 	if (pOut->PinCfg.pinMode == GPIO_ALT_FUNC) {
-		uint8_t reg_index = pOut->PinCfg.pinNumber / 8; // FIXME ? SHould be uint8 or uint32? what's more efficient
-		uint8_t reg_offset = pOut->PinCfg.pinNumber % 8;
+		uint8_t reg_index = pin_idx / 8; // FIXME ? SHould be uint8 or uint32? what's more efficient
+		uint8_t reg_offset = pin_idx % 8;
 
 		pGPIO->AFR[reg_index] &= ~(0xFU << reg_offset * 4);
 	    pGPIO->AFR[reg_index] |= (pOut->PinCfg.pinAFmode << reg_offset * 4);
@@ -156,10 +162,11 @@ void hal_gpio_deinit(gpio_port_num_t gpio)
  * @param[in] GPIO pin number
  * @return    pin value
  * */
-uint8_t hal_gpio_read_input_pin(GPIO_Handle_t *pGPIO)
+uint8_t hal_gpio_read_input_pin(const GPIO_Handle_t *pGPIO)
 {
 	uint8_t val = 0;
-	val = (uint8_t)((pGPIO->pGPIO_Base->IDR >> pGPIO->PinCfg.pinNumber) & 0x1U);
+	gpio_pin_index_t pin_idx = hal_gpio_pin_to_pin_index_within_port(pGPIO->PinCfg.pinNumber);
+	val = (uint8_t)((pGPIO->pGPIO_Base->IDR >> pin_idx) & 0x1U);
 	return val;
 }
 
@@ -179,14 +186,15 @@ uint16_t hal_gpio_read_input_port(GPIO_RegDef_t *pGPIOx)
  * @param[in] GPIO pin number
  * @param[in] pin value
  * */
-void hal_gpio_write_output_pin(GPIO_RegDef_t *pGPIOx, gpio_pin_t pin, gpio_pin_val_t val)
+void hal_gpio_write_output_pin(const GPIO_Handle_t *pGPIO, gpio_pin_val_t val)
 {
+	gpio_pin_index_t pin_idx = hal_gpio_pin_to_pin_index_within_port(pGPIO->PinCfg.pinNumber);
 	if (val == GPIO_PIN_RESET)
 		// Set 0 to bit position
-		pGPIOx->ODR &= ~(1 << pin);
+		pGPIO->pGPIO_Base->ODR &= ~(1 << pin_idx);
 	else
 		// Set 1 to bit position
-		pGPIOx->ODR |= (1 << pin);
+		pGPIO->pGPIO_Base->ODR |= (1 << pin_idx);
 }
 
 /**
@@ -202,18 +210,21 @@ void hal_gpio_write_output_port(GPIO_RegDef_t *pGPIOx, uint16_t val)
 
 void hal_gpio_toggle_output_pin(const GPIO_Handle_t *pGPIO)
 {
-	pGPIO->pGPIO_Base->ODR ^= (1 << pGPIO->PinCfg.pinNumber);
+	gpio_pin_index_t pin_idx = hal_gpio_pin_to_pin_index_within_port(pGPIO->PinCfg.pinNumber);
+	pGPIO->pGPIO_Base->ODR ^= (1 << pin_idx);
 }
 
 void hal_gpio_IRQ_config(const GPIO_Handle_t *pGPIO, uint8_t irq_priority, uint8_t en_di)
 {
-	nvic_interrupt_number_t irq_num = hal_exti_line_to_nvic_irq(pGPIO->PinCfg.pinNumber);
+	gpio_pin_index_t pin_idx = hal_gpio_pin_to_pin_index_within_port(pGPIO->PinCfg.pinNumber);
+	nvic_interrupt_number_t irq_num = hal_exti_line_to_nvic_irq(pin_idx);
 	hal_nvic_irq_enable_disable(irq_num, en_di);
 	hal_nvic_irq_priority_config(irq_num, irq_priority);
 }
 
-void hal_gpio_IRQ_handle(uint8_t pin)
+void hal_gpio_IRQ_handle(const GPIO_Handle_t *pGPIO)
 {
+	gpio_pin_index_t pin_idx = hal_gpio_pin_to_pin_index_within_port(pGPIO->PinCfg.pinNumber);
 	// Clear EXTI PR (pending register bit
-	hal_exti_interrupt_clear(pin);
+	hal_exti_interrupt_clear(pin_idx);
 }

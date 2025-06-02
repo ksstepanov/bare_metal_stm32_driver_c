@@ -8,26 +8,40 @@
 #ifndef INC_STM32F412DISCO_GPIO_H_
 #define INC_STM32F412DISCO_GPIO_H_
 #include "stm32f412disco.h"
-
+#include "stm32f412_gpio_pins.h"
 
 typedef enum {
-	GPIO_PIN0 = 0,
-	GPIO_PIN1 = 1,
-	GPIO_PIN2 = 2,
-	GPIO_PIN3 = 3,
-	GPIO_PIN4 = 4,
-	GPIO_PIN5 = 5,
-	GPIO_PIN6 = 6,
-	GPIO_PIN7 = 7,
-	GPIO_PIN8 = 8,
-	GPIO_PIN9 = 9,
-	GPIO_PIN10 = 10,
-	GPIO_PIN11 = 11,
-	GPIO_PIN12 = 12,
-	GPIO_PIN13 = 13,
-	GPIO_PIN14 = 14,
-	GPIO_PIN15 = 15,
-} gpio_pin_t;
+	GPIOA_PORT = 0,
+	GPIOB_PORT = 1,
+	GPIOC_PORT = 2,
+	GPIOD_PORT = 3,
+	GPIOE_PORT = 4,
+	GPIOF_PORT = 5,
+	GPIOG_PORT = 6,
+	GPIOH_PORT = 7,
+	GPIO_PORTS_NUM
+} gpio_port_num_t;
+
+typedef enum {
+	GPIO_PIN_UNUSED = -1, // to skip any settings for pin index
+	GPIO_PIN_IDX0 = 0,
+	GPIO_PIN_IDX1 = 1,
+	GPIO_PIN_IDX2 = 2,
+	GPIO_PIN_IDX3 = 3,
+	GPIO_PIN_IDX4 = 4,
+	GPIO_PIN_IDX5 = 5,
+	GPIO_PIN_IDX6 = 6,
+	GPIO_PIN_IDX7 = 7,
+	GPIO_PIN_IDX8 = 8,
+	GPIO_PIN_IDX9 = 9,
+	GPIO_PIN_IDX10 = 10,
+	GPIO_PIN_IDX11 = 11,
+	GPIO_PIN_IDX12 = 12,
+	GPIO_PIN_IDX13 = 13,
+	GPIO_PIN_IDX14 = 14,
+	GPIO_PIN_IDX15 = 15,
+	GPIO_PIN_IDXS_NUM
+} gpio_pin_index_t;
 
 typedef enum {
 	GPIO_PIN_RESET = 0,
@@ -69,7 +83,22 @@ typedef enum {
 	GPIO_PIN_PD
 } gpio_pu_pd_resistor_t;
 
-#define GPIO_AF_DEFAULT_VAL (0x0U)
+typedef enum {
+	GPIO_AF_DEFAULT_VAL = 0,
+	GPIO_AF0 = 0,
+	GPIO_AF1 = 1,
+	GPIO_AF2 = 2,
+	GPIO_AF3 = 3,
+	GPIO_AF4 = 4,
+	GPIO_AF5 = 5,
+	GPIO_AF6 = 6,
+	GPIO_AF7 = 7,
+	GPIO_AF8 = 8,
+	GPIO_AF9 = 9,
+	GPIO_AF10 = 10,
+	GPIO_AF12 = 12,
+	GPIO_AF15 = 15
+} gpio_af_mode_t;
 
 typedef struct {
 	/* [0x00]
@@ -117,7 +146,7 @@ typedef struct {
 } GPIO_RegDef_t;
 
 typedef struct {
-	uint8_t portNumber;      /* from gpio_num_t */
+	//uint8_t portNumber;      /* from gpio_num_t */
 	uint8_t pinNumber;       /* from gpio_pin_t */
 	uint8_t pinMode;         /* from gpio_mode_t */
 	uint8_t pinSpeed;        /* from gpio_output_speed_t */
@@ -162,7 +191,7 @@ void hal_gpio_deinit(gpio_port_num_t gpio);
  * @param[in] GPIO pin number
  * @return    pin value
  * */
-uint8_t hal_gpio_read_input_pin(GPIO_Handle_t *pGPIO);
+uint8_t hal_gpio_read_input_pin(const GPIO_Handle_t *pGPIO);
 
 /**
  * @brief     Read value from all GPIO pins
@@ -177,7 +206,7 @@ uint16_t hal_gpio_read_input_port(GPIO_RegDef_t *pGPIOx);
  * @param[in] GPIO pin number
  * @param[in] pin value
  * */
-void hal_gpio_write_output_pin(GPIO_RegDef_t *pGPIOx, gpio_pin_t pin, gpio_pin_val_t val);
+void hal_gpio_write_output_pin(const GPIO_Handle_t *pGPIO, gpio_pin_val_t val);
 
 /**
  * @brief     Write value to all 16 GPIO pins
@@ -194,7 +223,16 @@ void hal_gpio_toggle_output_pin(const GPIO_Handle_t *pGPIO);
 void hal_gpio_IRQ_config(const GPIO_Handle_t *pGPIO, uint8_t irq_priority, uint8_t en_di);
 
 
-void hal_gpio_IRQ_handle(uint8_t pinN);
+void hal_gpio_IRQ_handle(const GPIO_Handle_t *pGPIO);
 
+static inline gpio_port_num_t hal_gpio_pin_to_port(gpio_pin_t pin)
+{
+	return pin / GPIO_PIN_IDXS_NUM;
+}
+
+static inline gpio_pin_index_t hal_gpio_pin_to_pin_index_within_port(gpio_pin_t pin)
+{
+	return pin % GPIO_PIN_IDXS_NUM;
+}
 
 #endif /* INC_STM32F412DISCO_GPIO_H_ */

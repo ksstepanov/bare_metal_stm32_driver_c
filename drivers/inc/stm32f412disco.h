@@ -77,18 +77,6 @@ typedef enum {
 	I2C3n = 3
 } I2C_num_t;
 
-typedef enum {
-	GPIOA_PORT = 0,
-	GPIOB_PORT = 1,
-	GPIOC_PORT = 2,
-	GPIOD_PORT = 3,
-	GPIOE_PORT = 4,
-	GPIOH_PORT = 5,
-	GPIOG_PORT = 6,
-	GPIOF_PORT = 7,
-	NUM_OF_GPIOS
-} gpio_port_num_t;
-
 #define GPIOA ((GPIO_RegDef_t *)GPIOA_BASE)
 #define GPIOB ((GPIO_RegDef_t *)GPIOB_BASE)
 #define GPIOC ((GPIO_RegDef_t *)GPIOC_BASE)

@@ -8,6 +8,7 @@
 #ifndef INC_STM32F412_RCC_H_
 #define INC_STM32F412_RCC_H_
 #include "stm32f412disco.h"
+#include "stm32f412disco_gpio.h"
 #include "stm32f412_spi.h"
 #include "assert.h"
 

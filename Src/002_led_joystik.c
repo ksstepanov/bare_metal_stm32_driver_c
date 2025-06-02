@@ -18,9 +18,8 @@ static void led_joystick_002(void)
 {
 	printf("%s started\n", __func__);
 	const GPIO_PinCfg_t led_1_gpio_conf = {
-		.portNumber = GPIOC_PORT,
 		.pinMode = GPIO_OUTPUT,
-		.pinNumber = 7,
+		.pinNumber = GPIO_PC7,
 		.pinOpType = GPIO_OUT_PUSH_PULL,
 		.pinPuPdControl = GPIO_PIN_NO_PU_PD,
 		.pinSpeed = GPIO_OUT_SP_HIGH,
@@ -33,9 +32,8 @@ static void led_joystick_002(void)
 
 
 	const GPIO_PinCfg_t joystick_gpio_conf = {
-		.portNumber = GPIOA_PORT,
 		.pinMode = GPIO_INPUT,
-		.pinNumber = 0,
+		.pinNumber = GPIO_PA0,
 		.pinOpType = GPIO_OUT_DEFAULT,
 		.pinPuPdControl = GPIO_PIN_NO_PU_PD,
 		.pinSpeed = GPIO_OUT_SP_HIGH,
@@ -60,9 +58,8 @@ static void led_ext_button_002(void)
 {
 	printf("%s started\n", __func__);
 	const GPIO_PinCfg_t led_1_gpio_conf = {
-		.portNumber = GPIOC_PORT,
 		.pinMode = GPIO_OUTPUT,
-		.pinNumber = 7,
+		.pinNumber = GPIO_PC7,
 		.pinOpType = GPIO_OUT_PUSH_PULL,
 		.pinPuPdControl = GPIO_PIN_NO_PU_PD,
 		.pinSpeed = GPIO_OUT_SP_HIGH,
@@ -75,9 +72,8 @@ static void led_ext_button_002(void)
 
 
 	const GPIO_PinCfg_t button_gpio_conf = {
-		.portNumber = GPIOC_PORT,
 		.pinMode = GPIO_INPUT,
-		.pinNumber = 6,
+		.pinNumber = GPIO_PC6,
 		.pinOpType = GPIO_OUT_DEFAULT,
 		.pinPuPdControl = GPIO_PIN_NO_PU_PD,
 		.pinSpeed = GPIO_OUT_SP_HIGH,

@@ -96,12 +96,12 @@ typedef struct {
 
 #define SYSCFG ((SYSCFG_RegDef_t *)SYSCFG_BASE)
 
-static inline void hal_syscfg_exti_gpio_int_conf(gpio_port_num_t gpio_port, gpio_pin_t pin, hal_enable_disable_t en_dis)
+static inline void hal_syscfg_exti_gpio_int_conf(gpio_port_num_t gpio_port, gpio_pin_index_t pin_idx, hal_enable_disable_t en_dis)
 {
 	assert(hal_rcc_syscfg_pclk_is_enabled());
 	SYSCFG_RegDef_t *pSYSCFG = SYSCFG;
-	uint8_t exticr_reg_offset = pin % 4;
-	uint8_t exticr_reg = pin / 4;
+	uint8_t exticr_reg_offset = pin_idx % 4;
+	uint8_t exticr_reg = pin_idx / 4;
 	pSYSCFG->EXTICR[exticr_reg] &= ~(0xFU << exticr_reg_offset * 4);
 
 	if (en_dis == HAL_ENABLE) {

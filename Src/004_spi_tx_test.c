@@ -10,8 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define BUTTON_PIN (GPIO_PIN6)
-#define BUTTON_PORT (GPIOC_PORT)
+#define BUTTON_PIN (GPIO_PC6)
 #define LED_PIN (GPIO_PIN7)
 
 static GPIO_Handle_t button_gpio;
@@ -26,7 +25,6 @@ static void delay(uint32_t ticks)
 }
 
 const GPIO_PinCfg_t test_004_button_gpio_conf = {
-	.portNumber = BUTTON_PORT,
 	.pinMode = GPIO_INPUT,
 	.pinNumber = BUTTON_PIN,
 	.pinOpType = GPIO_OUT_DEFAULT,
@@ -52,40 +50,11 @@ void gpio_interrupt_004_handler(void)
 {
 	delay(5000);
 	test_004_receiver_ready = RX_READY;
-	hal_gpio_IRQ_handle(button_gpio.PinCfg.pinNumber);
-}
-
-void test_004_gpio_pins_enable(void) {
-	GPIO_PinCfg_t gpio_spi2_conf = {
-		.portNumber = GPIOB_PORT,
-		.pinMode = GPIO_ALT_FUNC,
-		.pinNumber = GPIO_PIN9,
-		.pinOpType = GPIO_OUT_PUSH_PULL,
-		.pinPuPdControl = GPIO_PIN_NO_PU_PD,
-		.pinSpeed = GPIO_OUT_SP_HIGH,
-		.pinAFmode = 5,
-		.pinInIntTrig = GPIO_IN_INT_TRIG_DISABLED
-	};
-
-	GPIO_Handle_t gpio_spi2_handle;
-	/* NSS */
-	hal_gpio_init(&gpio_spi2_conf, &gpio_spi2_handle);
-
-	/* SCLK */
-	gpio_spi2_conf.pinNumber = GPIO_PIN10;
-	hal_gpio_init(&gpio_spi2_conf, &gpio_spi2_handle);
-
-	/* MISO */
-	gpio_spi2_conf.pinNumber = GPIO_PIN14; // 4
-	hal_gpio_init(&gpio_spi2_conf, &gpio_spi2_handle);
-
-	/* MOSI */
-	gpio_spi2_conf.pinNumber = GPIO_PIN15; // 3
-	hal_gpio_init(&gpio_spi2_conf, &gpio_spi2_handle);
+	hal_gpio_IRQ_handle(&button_gpio);
 }
 
 void test_004_transaction_init(SPI_transaction_t *pOut, test_004_send_state_t current_state, test_004_data_t *pIn) {
-	if ((pOut == NULL) || (pOut->pTX_data == NULL) || (pOut->pRX_data == NULL)) {
+	if ((pOut == NULL) || (pIn == NULL) || ((pIn->msg_out == NULL) && (pIn->p_buf_in == NULL))) {
 		printf("ERROR: Null ptr provided.\n");
 		current_state = STATE_ERROR;
 	}
@@ -149,11 +118,16 @@ void spi_tx_test_004_main(void)
 		.bus_config = SPI_BUS_CONF_FULL_DUP,
 		.CPHA = SPI_CPHA_FIRST_EDGE,
 		.CPOL = SPI_CPOL_LOW,
-		.SSM = SPI_SSM_HW
+		.SSM = SPI_SSM_HW,
+		.pins = {
+		             .MOSI = GPIO_PB15,
+		         	 .MISO = GPIO_PB14,
+		         	 .SCLK = GPIO_PB10,
+		         	 .CS = GPIO_PB9,
+				}
 	};
 
 	SPI_Handle_t spi2;
-	test_004_gpio_pins_enable();
 	hal_spi_init(&spi2_cfg, &spi2);
 	hal_spi_IRQ_config(&spi2, 8, HAL_ENABLE); // FIXME: assert that IRQ is send_with_IT function if IRQ is not enabled
 

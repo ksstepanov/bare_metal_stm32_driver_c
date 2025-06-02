@@ -11,10 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define BUTTON_PIN (GPIO_PIN6)
-#define BUTTON_PORT (GPIOC_PORT)
-#define LED_PIN (GPIO_PIN7)
-
 /* Reuse test_004 globals to avoid redefinitions */
 extern uint8_t dummy_byte;
 extern volatile uint32_t test_004_receiver_ready;
@@ -50,11 +46,16 @@ void spi_tx_test_005_main(void)
 		.bus_config = SPI_BUS_CONF_FULL_DUP,
 		.CPHA = SPI_CPHA_FIRST_EDGE,
 		.CPOL = SPI_CPOL_LOW,
-		.SSM = SPI_SSM_HW
+		.SSM = SPI_SSM_HW,
+		.pins = {
+             .MOSI = GPIO_PB15,
+         	 .MISO = GPIO_PB14,
+         	 .SCLK = GPIO_PB10,
+         	 .CS = GPIO_PB9,
+		}
 	};
 
 	//SPI_Handle_t spi2;
-	test_004_gpio_pins_enable();
 	hal_spi_init(&spi2_cfg, &spi2);
 	hal_spi_IRQ_config(&spi2, 8, HAL_ENABLE); // FIXME: assert that IRQ is send_with_IT function if IRQ is not enabled
 

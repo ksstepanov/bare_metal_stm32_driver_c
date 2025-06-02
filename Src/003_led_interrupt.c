@@ -10,10 +10,8 @@
 #include "003_led_interrupt.h"
 #define BUTTON_PRESSED 1
 
-#define BUTTON_PIN (GPIO_PIN6)
-#define LED_PIN (GPIO_PIN7)
-#define BUTTON_PORT (GPIOC_PORT)
-#define LED_PORT (GPIOC_PORT)
+#define BUTTON_PIN (GPIO_PC6)
+#define LED_PIN (GPIO_PC7)
 
 
 static void delay(uint32_t ticks)
@@ -28,7 +26,6 @@ static void led_ext_button_003(void)
 {
 	printf("%s started\n", __func__);
 	const GPIO_PinCfg_t led_1_gpio_conf = {
-		.portNumber = LED_PORT,
 		.pinMode = GPIO_OUTPUT,
 		.pinNumber = LED_PIN,
 		.pinOpType = GPIO_OUT_PUSH_PULL,
@@ -42,7 +39,6 @@ static void led_ext_button_003(void)
 
 
 	const GPIO_PinCfg_t button_gpio_conf = {
-		.portNumber = BUTTON_PORT,
 		.pinMode = GPIO_INPUT,
 		.pinNumber = BUTTON_PIN,
 		.pinOpType = GPIO_OUT_DEFAULT,
@@ -69,7 +65,7 @@ void led_interrupt_003_button_handler(void)
 {
 	delay(50000);
 	hal_gpio_toggle_output_pin(&led_1_gpio);
-	hal_gpio_IRQ_handle(button_gpio.PinCfg.pinNumber);
+	hal_gpio_IRQ_handle(&button_gpio);
 }
 
 void led_interrupt_003_main(void)

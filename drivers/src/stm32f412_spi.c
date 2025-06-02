@@ -57,6 +57,7 @@ typedef enum {
 static inline void validate_spi_cfg(const SPI_Cfg_t *pSPI_conf);
 static inline SPI_I2S_RegDef_t *hal_spi_dev_to_addr(spi_dev_num_t spi_number);
 static inline void hal_spi_perip_clk_ctrl(spi_dev_num_t spi_number, hal_enable_disable_t val);
+static void spi_gpio_pins_enable(const SPI_Cfg_t *pSPI_conf);
 
 static inline void wait_tx_empty(const SPI_I2S_RegDef_t *pSPI);
 static inline void wait_rx_ready(const SPI_I2S_RegDef_t *pSPI);
@@ -109,8 +110,11 @@ void hal_spi_init(const SPI_Cfg_t *pSPI_conf, SPI_Handle_t *pOut)
 	pOut->data->tx_state = SPI_READY;
 	pOut->data->rx_state = SPI_READY;
 
-	// 0. Enable SPI clock:
+	// 0.0 Enable SPI clock:
 	hal_spi_perip_clk_ctrl(pOut->SPICfg.spi_device, HAL_ENABLE);
+
+	// 0.1 Enable GPIO pins to AF mode:
+	spi_gpio_pins_enable(pSPI_conf);
 
 	uint32_t cr1_reg = 0;
 	// 1. configure the mode of SPI: master slave, bit 2
@@ -162,28 +166,30 @@ void hal_spi_deinit(spi_dev_num_t spi_dev)
 }
 
 // TODO return an error code
-void hal_spi_send_data_with_polling(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *pTransaction)
+void hal_spi_send_data_with_polling(const SPI_Handle_t *pSPI_dev, const SPI_transaction_t *pTransaction)
 {
 	assert(is_spi_enabled(pSPI_dev->pSPI_Base));
 
 	if (pTransaction->pTX_data != NULL && pTransaction->tx_len > 0) {
-		while (pTransaction->tx_len > 0) {
+		SPI_transaction_t temp = *pTransaction;
+		while (temp.tx_len > 0) {
 
 			wait_tx_empty(pSPI_dev->pSPI_Base);
-			spi_tx(pSPI_dev, pTransaction);
+			spi_tx(pSPI_dev, &temp);
 		}
 	}
 }
 
-void hal_spi_receive_data_with_polling(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *pTransaction)
+void hal_spi_receive_data_with_polling(const SPI_Handle_t *pSPI_dev, const SPI_transaction_t *pTransaction)
 {
 	assert(is_spi_enabled(pSPI_dev->pSPI_Base));
 
 	if (pTransaction->pRX_data != NULL && pTransaction->rx_len > 0) {
-		while (pTransaction->rx_len > 0) {
+		SPI_transaction_t temp = *pTransaction;
+		while (temp.rx_len > 0) {
 
 			wait_rx_ready(pSPI_dev->pSPI_Base);
-			spi_rx(pSPI_dev, pTransaction);
+			spi_rx(pSPI_dev, &temp);
 		}
 	}
 }
@@ -235,7 +241,7 @@ void hal_spi_IRQ_handle(SPI_Handle_t *pSPI)
 }
 
 // FIXME: make tread safe
-spi_state_t hal_spi_send_data_with_IT(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *t)
+spi_state_t hal_spi_send_data_with_IT(const SPI_Handle_t *pSPI_dev, const SPI_transaction_t *t)
 {
 	assert(t->pTX_data != NULL);
 	if (pSPI_dev->data->tx_state != SPI_BUSY_TX) { //== SPI_READY
@@ -250,7 +256,7 @@ spi_state_t hal_spi_send_data_with_IT(const SPI_Handle_t *pSPI_dev, SPI_transact
 	return pSPI_dev->data->tx_state;
 }
 
-spi_state_t hal_spi_receive_data_with_IT(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *t)
+spi_state_t hal_spi_receive_data_with_IT(const SPI_Handle_t *pSPI_dev, const SPI_transaction_t *t)
 {
 	assert(t->pRX_data != NULL);
 	if (pSPI_dev->data->rx_state != SPI_BUSY_RX) { //== SPI_READY
@@ -308,6 +314,7 @@ static inline void validate_spi_cfg(const SPI_Cfg_t *pSPI_conf)
     assert(IS_VALID_SPI_CPOL(pSPI_conf->CPOL));
     assert(IS_VALID_SPI_CPHA(pSPI_conf->CPHA));
     assert(IS_VALID_SPI_SSM(pSPI_conf->SSM));
+    // FIXME : add validation of GPIO ports
 }
 
 static inline SPI_I2S_RegDef_t *hal_spi_dev_to_addr(spi_dev_num_t spi_number)
@@ -338,6 +345,71 @@ static inline void hal_spi_perip_clk_ctrl(spi_dev_num_t spi_number, hal_enable_d
 	}
 }
 
+static inline gpio_af_mode_t spi_gpio_af_mode(spi_dev_num_t dev_num, gpio_pin_t gpio_pin)
+{
+	switch (dev_num) {
+	case SPI1:
+		return GPIO_AF5;
+	case SPI2:
+		return GPIO_AF5;
+	case SPI3:
+		if (gpio_pin == GPIO_PD6) {
+			return GPIO_AF5;
+		} else if ((gpio_pin == GPIO_PB3) || (gpio_pin == GPIO_PB4) || (gpio_pin == GPIO_PB5) ||\
+				(gpio_pin == GPIO_PC10) || (gpio_pin == GPIO_PC11) || (gpio_pin == GPIO_PC12)) {
+			return GPIO_AF6;
+		} else if (gpio_pin == GPIO_PB12) {
+			return GPIO_AF7;
+		} else {
+			return GPIO_AF_DEFAULT_VAL;
+		}
+	case SPI4:
+		if ((gpio_pin == GPIO_PA1) ||\
+				(gpio_pin == GPIO_PE2) || (gpio_pin == GPIO_PE4) || (gpio_pin == GPIO_PE5) || (gpio_pin == GPIO_PE6) ||\
+				(gpio_pin == GPIO_PE11) || (gpio_pin == GPIO_PE12) || (gpio_pin == GPIO_PE13) || (gpio_pin == GPIO_PE14)) {
+			return GPIO_AF5;
+		} else if ((gpio_pin == GPIO_PA11) || (gpio_pin == GPIO_PB12) || (gpio_pin == GPIO_PB13)) {
+			return GPIO_AF6;
+		} else {
+			return GPIO_AF_DEFAULT_VAL;
+		}
+	case SPI5:
+		return GPIO_AF6;
+	default:
+		return GPIO_AF_DEFAULT_VAL;
+	}
+}
+
+static void spi_gpio_pins_enable(const SPI_Cfg_t *pSPI_conf) {
+	GPIO_PinCfg_t gpio_spi2_conf = {
+		.pinMode = GPIO_ALT_FUNC,
+		.pinNumber = pSPI_conf->pins.CS,
+		.pinOpType = GPIO_OUT_PUSH_PULL,
+		.pinPuPdControl = GPIO_PIN_NO_PU_PD,
+		.pinSpeed = GPIO_OUT_SP_HIGH,
+		.pinAFmode = spi_gpio_af_mode(pSPI_conf->spi_device, pSPI_conf->pins.CS),
+		.pinInIntTrig = GPIO_IN_INT_TRIG_DISABLED
+	};
+
+	GPIO_Handle_t gpio_spi2_handle;
+	/* NSS */
+	hal_gpio_init(&gpio_spi2_conf, &gpio_spi2_handle);
+
+	/* SCLK */
+	gpio_spi2_conf.pinNumber = pSPI_conf->pins.SCLK;
+	gpio_spi2_conf.pinAFmode = spi_gpio_af_mode(pSPI_conf->spi_device, pSPI_conf->pins.SCLK);
+	hal_gpio_init(&gpio_spi2_conf, &gpio_spi2_handle);
+
+	/* MISO */
+	gpio_spi2_conf.pinNumber = pSPI_conf->pins.MISO;
+	gpio_spi2_conf.pinAFmode = spi_gpio_af_mode(pSPI_conf->spi_device, pSPI_conf->pins.MISO);
+	hal_gpio_init(&gpio_spi2_conf, &gpio_spi2_handle);
+
+	/* MOSI */
+	gpio_spi2_conf.pinNumber = pSPI_conf->pins.MOSI;
+	gpio_spi2_conf.pinAFmode = spi_gpio_af_mode(pSPI_conf->spi_device, pSPI_conf->pins.MOSI);
+	hal_gpio_init(&gpio_spi2_conf, &gpio_spi2_handle);
+}
 
 // TODO: not safe to poll. need timeout
 static inline void wait_tx_empty(const SPI_I2S_RegDef_t *pSPI)

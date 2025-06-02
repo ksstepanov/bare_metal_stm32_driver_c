@@ -60,22 +60,22 @@ typedef struct {
 #define EXTI ((EXTI_RegDef_t *)EXTI_BASE)
 
 typedef enum {
-	EXTI_LINE_GPIO0 = GPIO_PIN0,
-	EXTI_LINE_GPIO1 = GPIO_PIN1,
-	EXTI_LINE_GPIO2 = GPIO_PIN2,
-	EXTI_LINE_GPIO3 = GPIO_PIN3,
-	EXTI_LINE_GPIO4 = GPIO_PIN4,
-	EXTI_LINE_GPIO5 = GPIO_PIN5,
-	EXTI_LINE_GPIO6 = GPIO_PIN6,
-	EXTI_LINE_GPIO7 = GPIO_PIN7,
-	EXTI_LINE_GPIO8 = GPIO_PIN8,
-	EXTI_LINE_GPIO9 = GPIO_PIN9,
-	EXTI_LINE_GPIO10 = GPIO_PIN10,
-	EXTI_LINE_GPIO11 = GPIO_PIN11,
-	EXTI_LINE_GPIO12 = GPIO_PIN12,
-	EXTI_LINE_GPIO13 = GPIO_PIN13,
-	EXTI_LINE_GPIO14 = GPIO_PIN14,
-	EXTI_LINE_GPIO15 = GPIO_PIN15,
+	EXTI_LINE_GPIO0 = GPIO_PIN_IDX0,
+	EXTI_LINE_GPIO1 = GPIO_PIN_IDX1,
+	EXTI_LINE_GPIO2 = GPIO_PIN_IDX2,
+	EXTI_LINE_GPIO3 = GPIO_PIN_IDX3,
+	EXTI_LINE_GPIO4 = GPIO_PIN_IDX4,
+	EXTI_LINE_GPIO5 = GPIO_PIN_IDX5,
+	EXTI_LINE_GPIO6 = GPIO_PIN_IDX6,
+	EXTI_LINE_GPIO7 = GPIO_PIN_IDX7,
+	EXTI_LINE_GPIO8 = GPIO_PIN_IDX8,
+	EXTI_LINE_GPIO9 = GPIO_PIN_IDX9,
+	EXTI_LINE_GPIO10 = GPIO_PIN_IDX10,
+	EXTI_LINE_GPIO11 = GPIO_PIN_IDX11,
+	EXTI_LINE_GPIO12 = GPIO_PIN_IDX12,
+	EXTI_LINE_GPIO13 = GPIO_PIN_IDX13,
+	EXTI_LINE_GPIO14 = GPIO_PIN_IDX14,
+	EXTI_LINE_GPIO15 = GPIO_PIN_IDX15,
 	EXTI_LINE_PVD = 16,
 	EXTI_LINE_RTC_ALARM = 17,
 	EXTI_LINE_USB_OTG_FS_WAKEUP = 18,
@@ -118,13 +118,13 @@ static inline nvic_interrupt_number_t hal_exti_line_to_nvic_irq(exti_line_num_t 
  * @brief     configure falling trigger detection
  * @param[in] pin from gpio_pin_t or 21-22
  */
-static inline void hal_exti_gpio_falling_trigger_conf(uint8_t pin, hal_enable_disable_t val)
+static inline void hal_exti_gpio_falling_trigger_conf(gpio_pin_index_t pin_idx, hal_enable_disable_t val)
 {
 	EXTI_RegDef_t *const pEXTI = EXTI;
 	if (val == HAL_ENABLE) {
-		pEXTI->FTSR |= (1 << pin);
+		pEXTI->FTSR |= (1 << pin_idx);
 	} else {
-		pEXTI->FTSR &= ~(1 << pin);
+		pEXTI->FTSR &= ~(1 << pin_idx);
 	}
 }
 
@@ -132,13 +132,13 @@ static inline void hal_exti_gpio_falling_trigger_conf(uint8_t pin, hal_enable_di
  * @brief     configure rising trigger detection
  * @param[in] pin from exti_line_num_t
  */
-static inline void hal_exti_gpio_rising_trigger_conf(uint8_t pin, hal_enable_disable_t val)
+static inline void hal_exti_gpio_rising_trigger_conf(gpio_pin_index_t pin_idx, hal_enable_disable_t val)
 {
 	EXTI_RegDef_t *const pEXTI = EXTI;
 	if (val == HAL_ENABLE) {
-		pEXTI->RTSR |= (1 << pin);
+		pEXTI->RTSR |= (1 << pin_idx);
 	} else {
-		pEXTI->RTSR &= ~(1 << pin);
+		pEXTI->RTSR &= ~(1 << pin_idx);
 	}
 }
 

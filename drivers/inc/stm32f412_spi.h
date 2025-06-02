@@ -183,6 +183,13 @@ typedef enum {
 } spi_sr_shifts_t;
 
 typedef struct {
+	uint8_t MOSI;
+	uint8_t MISO;
+	uint8_t SCLK;
+	uint8_t CS;
+} spi_pins_t; //TODO
+
+typedef struct {
 	uint8_t spi_device;    /* from spi_dev_num_t */
 	uint8_t device_mode;   /* from spi_mode_t */
 	uint8_t bus_config;    /* from spi_bus_conf_t */
@@ -191,6 +198,7 @@ typedef struct {
 	uint8_t CPOL;          /* Clock polarity from gpio_pu_pd_resistor_t */
 	uint8_t CPHA;          /* Clock phase from gpio_output_type_t */
 	uint8_t SSM;           /* Software slave management from ? */
+	spi_pins_t pins;
 } SPI_Cfg_t; /* FIXME packed ? */
 
 
@@ -225,7 +233,6 @@ typedef struct {
 	SPI_I2S_RegDef_t *pSPI_Base;
 	/* SPI configuration settings */
 	SPI_Cfg_t SPICfg;
-
 	/* current transaction data */
 	SPI_transaction_t *data;
 } SPI_Handle_t;
@@ -243,11 +250,11 @@ void hal_spi_init(const SPI_Cfg_t *pGPIO_conf, SPI_Handle_t *pOut);
  * */
 void hal_spi_deinit(spi_dev_num_t gpio);
 
-void hal_spi_send_data_with_polling(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *pTransaction);
-void hal_spi_receive_data_with_polling(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *pTransaction);
+void hal_spi_send_data_with_polling(const SPI_Handle_t *pSPI_dev, const SPI_transaction_t *pTransaction);
+void hal_spi_receive_data_with_polling(const SPI_Handle_t *pSPI_dev, const SPI_transaction_t *pTransaction);
 
-spi_state_t hal_spi_send_data_with_IT(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *t); // FIXME const
-spi_state_t hal_spi_receive_data_with_IT(const SPI_Handle_t *pSPI_dev, SPI_transaction_t *t);
+spi_state_t hal_spi_send_data_with_IT(const SPI_Handle_t *pSPI_dev, const SPI_transaction_t *t); // FIXME const
+spi_state_t hal_spi_receive_data_with_IT(const SPI_Handle_t *pSPI_dev, const SPI_transaction_t *t);
 
 /* Interrupts */
 void hal_spi_IRQ_config(SPI_Handle_t *pSPI, uint8_t irq_priority, uint8_t en_di);
